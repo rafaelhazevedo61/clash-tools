@@ -14,7 +14,7 @@
 
     <groupId>br.com.clash</groupId>
     <artifactId>clash-tools</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
     <name>clash-tools</name>
     <description>Ferramentas utilitárias para Clash of Clans: exportação de liga de guerras, geração de relatórios e automações para gestão de clãs.</description>
 

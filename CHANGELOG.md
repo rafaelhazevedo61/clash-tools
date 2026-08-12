@@ -6,13 +6,19 @@ O formato é baseado no conceito de [Keep a Changelog](https://keepachangelog.co
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-08-12
+
 ### Added
 
-- Configuração de encoding UTF-8 para logs (`logging.charset.console=UTF-8` no `application.yml` e `-Dfile.encoding=UTF-8` no plugin `spring-boot-maven-plugin`) para garantir acentos corretos no console.
+- Frontend React + Vite integrado ao repositório, com tela inicial para acionar a geração da planilha da liga de guerras.
+- Paralelização do processamento dos clãs com `CompletableFuture`, reduzindo o tempo total de coleta dos dados das guerras.
+- Configuração de proxy no Vite (`/api -> http://localhost:8080`) para facilitar o desenvolvimento local.
+- `README.md` com instruções de execução do backend e do frontend.
 
 ### Fixed
 
 - Removido o último `RuntimeException` do fluxo de exportação. Quando um clã não possui registros de guerra, a aplicação apenas registra um log informativo e continua processando os demais clãs.
+- Configuração de encoding UTF-8 para logs (`logging.charset.console=UTF-8` no `application.yml` e `-Dfile.encoding=UTF-8` no plugin `spring-boot-maven-plugin`) para garantir acentos corretos no console.
 
 ## [1.0.0] - 2026-08-12
 
