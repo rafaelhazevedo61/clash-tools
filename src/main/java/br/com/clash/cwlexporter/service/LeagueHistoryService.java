@@ -91,9 +91,9 @@ public class LeagueHistoryService {
 
     @Transactional
     public long clearAll() {
-        long count = leagueHistoryRepository.count();
-        leagueHistoryRepository.deleteAllHistories();
-        return count;
+        List<LeagueHistoryEntity> all = leagueHistoryRepository.findAll();
+        leagueHistoryRepository.deleteAll(all);
+        return all.size();
     }
 
     private String normalizeTag(String tag) {
