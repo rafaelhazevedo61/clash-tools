@@ -28,9 +28,9 @@ interface LeagueHistory {
   generatedAt: string
 }
 
-interface ExportResponse {
+interface ExportResult {
   message: string
-  filePath: string
+  fileName: string
 }
 
 interface ClearResponse {
@@ -47,7 +47,7 @@ interface ClanGroup {
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('export')
   const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState<ExportResponse | null>(null)
+  const [result, setResult] = useState<ExportResult | null>(null)
   const [clearResult, setClearResult] = useState<ClearResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -67,8 +67,23 @@ function App() {
       if (!response.ok) {
         throw new Error(`Erro ${response.status}: ${response.statusText}`)
       }
-      const data: ExportResponse = await response.json()
-      setResult(data)
+
+      const contentDisposition = response.headers.get('content-disposition')
+      const fileName = contentDisposition
+        ? contentDisposition.split('filename="')[1]?.replace('"', '')
+        : 'LigaMensal.xlsx'
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = fileName || 'LigaMensal.xlsx'
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      window.URL.revokeObjectURL(url)
+
+      setResult({ message: 'Arquivo gerado e baixado com sucesso.', fileName: fileName || 'LigaMensal.xlsx' })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro inesperado')
     } finally {
@@ -181,17 +196,19 @@ function App() {
       )}
 
       {activeTab === 'export' && (
-        <div className="tab-content">
+        <div className="tab-content center">
           <p>Geração de planilha da Liga de Guerras</p>
-          <button onClick={handleExport} disabled={loading}>
-            {loading ? 'Gerando...' : 'Gerar Excel'}
-          </button>
+          <div className="button-group">
+            <button onClick={handleExport} disabled={loading}>
+              {loading ? 'Gerando...' : 'Gerar Excel'}
+            </button>
+          </div>
 
           {result && (
             <div className="message success">
               <strong>{result.message}</strong>
               <br />
-              <small>{result.filePath}</small>
+              <small>{result.fileName}</small>
             </div>
           )}
         </div>
@@ -199,14 +216,14 @@ function App() {
 
       {activeTab === 'history' && (
         <div className="tab-content">
-          <div className="history-header">
+          <div className="button-group center">
             <button className="danger" onClick={handleClear} disabled={loading}>
               Limpar histórico
             </button>
           </div>
 
           {histories.length === 0 ? (
-            <p className="empty">Nenhum histórico encontrado.</p>
+            <p className="empty center">Nenhum histórico encontrado.</p>
           ) : (
             <div className="history-layout">
               <div className="clan-list">

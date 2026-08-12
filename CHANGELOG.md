@@ -16,6 +16,9 @@ O formato é baseado no conceito de [Keep a Changelog](https://keepachangelog.co
 - Tabela de jogadores com totais de ataque, defesa, estrelas gerais e dias de guerra.
 - Navegação por abas (Gerar Excel / Histórico).
 - Histórico agrupado por clã com expansão para visualizar registros de cada season.
+- Endpoint `DELETE /api/league/history` para limpar o histórico do banco.
+- Download direto do arquivo Excel via `GET /api/league/export`, sem salvar em disco.
+- Botões principais do frontend centralizados.
 
 ## [1.2.0] - 2026-08-12
 

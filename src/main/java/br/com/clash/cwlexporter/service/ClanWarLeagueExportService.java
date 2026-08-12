@@ -11,14 +11,11 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
@@ -36,17 +33,14 @@ public class ClanWarLeagueExportService {
     private final ExcelGenerator excelGenerator;
     private final LeagueHistoryService leagueHistoryService;
 
-    public File exportLeagueFile() throws IOException, InterruptedException {
+    public ExportResult exportLeagueFile() throws IOException, InterruptedException {
         log.info("Iniciando exportação do arquivo da liga de guerras...");
 
         LocalDate hoje = LocalDate.now();
         String nomeMes = hoje.getMonth().getDisplayName(TextStyle.FULL, new Locale("pt", "BR"));
         String ano = String.valueOf(hoje.getYear());
 
-        Path outputDir = Paths.get(clashProperties.getOutput().getDirectory());
-        Files.createDirectories(outputDir);
         String fileName = String.format("%s_%s%s.xlsx", clashProperties.getOutput().getFilenamePrefix(), ano, nomeMes);
-        Path filePath = outputDir.resolve(fileName);
 
         try (Workbook workbook = new XSSFWorkbook()) {
             List<CompletableFuture<ClanExportData>> futures = clashProperties.getClans().stream()
@@ -60,7 +54,7 @@ public class ClanWarLeagueExportService {
 
             for (ClanExportData data : results) {
                 excelGenerator.generatePlayerDataExcel(data.playerData, workbook, data.clanName);
-                leagueHistoryService.save(data.clanTag, data.clanName, data.season, filePath.toString(), data.playerData);
+                leagueHistoryService.save(data.clanTag, data.clanName, data.season, null, data.playerData);
             }
 
             if (workbook.getNumberOfSheets() == 0) {
@@ -69,13 +63,12 @@ public class ClanWarLeagueExportService {
                 row.createCell(0).setCellValue("Nenhuma informação de liga foi gerada. Verifique os logs da API.");
             }
 
-            try (var fileOut = Files.newOutputStream(filePath)) {
-                workbook.write(fileOut);
+            try (var out = new ByteArrayOutputStream()) {
+                workbook.write(out);
+                log.info("Excel mensal gerado com sucesso: {}", fileName);
+                return new ExportResult(out.toByteArray(), fileName);
             }
         }
-
-        log.info("Excel mensal gerado com sucesso em: {}", filePath);
-        return filePath.toFile();
     }
 
     private ClanExportData processClan(Clan clan) {
@@ -225,6 +218,9 @@ public class ClanWarLeagueExportService {
     }
 
     private record ClanExportData(String clanTag, String clanName, String season, List<PlayerData> playerData) {
+    }
+
+    public record ExportResult(byte[] content, String fileName) {
     }
 
     private String parseSeason(String endTime) {
