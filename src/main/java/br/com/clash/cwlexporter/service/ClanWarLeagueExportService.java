@@ -132,7 +132,8 @@ public class ClanWarLeagueExportService {
             return objectMapper.readValue(response.body(), ClanWarLeagueGroup.class);
         }
         if (response.statusCode() == 404) {
-            throw new RuntimeException("Não foi encontrado uma liga de guerras para o clã informado.");
+            log.warn("CLASH-TOOLS-LOG:::::: REGISTROS PARA CLÃ NÃO ENCONTRADO (tag: {})", tag);
+            return null;
         }
         log.warn("Erro ao buscar liga para {}: {}", tag, response.statusCode());
         return null;
