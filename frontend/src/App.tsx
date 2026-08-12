@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 
+type Tab = 'export' | 'history'
+
 interface DayData {
   id: number
   warDay: number
@@ -24,7 +26,6 @@ interface LeagueHistory {
   season: string
   filePath: string
   generatedAt: string
-  players: Player[]
 }
 
 interface ExportResponse {
@@ -32,16 +33,23 @@ interface ExportResponse {
   filePath: string
 }
 
+interface ClanGroup {
+  tag: string
+  name: string
+  histories: LeagueHistory[]
+}
+
 function App() {
+  const [activeTab, setActiveTab] = useState<Tab>('export')
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<ExportResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
+
   const [histories, setHistories] = useState<LeagueHistory[]>([])
+  const [expandedClan, setExpandedClan] = useState<string | null>(null)
   const [selectedHistory, setSelectedHistory] = useState<LeagueHistory | null>(null)
   const [selectedPlayers, setSelectedPlayers] = useState<Player[]>([])
   const [loadingPlayers, setLoadingPlayers] = useState(false)
-  const [tagFilter, setTagFilter] = useState('')
-  const [seasonFilter, setSeasonFilter] = useState('')
 
   const handleExport = async () => {
     setLoading(true)
@@ -55,7 +63,6 @@ function App() {
       }
       const data: ExportResponse = await response.json()
       setResult(data)
-      loadHistories()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro inesperado')
     } finally {
@@ -65,13 +72,7 @@ function App() {
 
   const loadHistories = async () => {
     try {
-      const params = new URLSearchParams()
-      if (tagFilter.trim()) params.set('tag', tagFilter.trim())
-      if (seasonFilter.trim()) params.set('season', seasonFilter.trim())
-      const url = params.toString()
-        ? `/api/league/history/clan?${params.toString()}`
-        : '/api/league/history'
-      const response = await fetch(url)
+      const response = await fetch('/api/league/history')
       if (!response.ok) {
         throw new Error(`Erro ${response.status}: ${response.statusText}`)
       }
@@ -101,105 +102,140 @@ function App() {
   }
 
   useEffect(() => {
-    loadHistories()
-  }, [])
+    if (activeTab === 'history') {
+      loadHistories()
+    }
+  }, [activeTab])
+
+  const clanGroups: ClanGroup[] = histories.reduce((groups, history) => {
+    const existing = groups.find((g) => g.tag === history.clanTag)
+    if (existing) {
+      existing.histories.push(history)
+      return groups
+    }
+    groups.push({ tag: history.clanTag, name: history.clanName, histories: [history] })
+    return groups
+  }, [] as ClanGroup[])
 
   return (
     <div className="container">
       <h1>Clash Tools</h1>
-      <p>Geração de planilha da Liga de Guerras</p>
-      <button onClick={handleExport} disabled={loading}>
-        {loading ? 'Gerando...' : 'Gerar Excel'}
-      </button>
-
-      {result && (
-        <div className="message success">
-          <strong>{result.message}</strong>
-          <br />
-          <small>{result.filePath}</small>
-        </div>
-      )}
+      <div className="tabs">
+        <button
+          className={activeTab === 'export' ? 'active' : ''}
+          onClick={() => setActiveTab('export')}
+        >
+          Gerar Excel
+        </button>
+        <button
+          className={activeTab === 'history' ? 'active' : ''}
+          onClick={() => setActiveTab('history')}
+        >
+          Histórico
+        </button>
+      </div>
 
       {error && <div className="message error">{error}</div>}
 
-      <div className="filters">
-        <h2>Histórico de Ligas</h2>
-        <div className="filter-row">
-          <input
-            type="text"
-            placeholder="Tag do clã (ex: #PVQ828J)"
-            value={tagFilter}
-            onChange={(e) => setTagFilter(e.target.value)}
-          />
-          <input
-            type="text"
-            placeholder="Season (ex: 2026-08)"
-            value={seasonFilter}
-            onChange={(e) => setSeasonFilter(e.target.value)}
-          />
-          <button className="secondary" onClick={loadHistories}>Buscar</button>
-        </div>
-      </div>
+      {activeTab === 'export' && (
+        <div className="tab-content">
+          <p>Geração de planilha da Liga de Guerras</p>
+          <button onClick={handleExport} disabled={loading}>
+            {loading ? 'Gerando...' : 'Gerar Excel'}
+          </button>
 
-      {histories.length === 0 ? (
-        <p className="empty">Nenhum histórico encontrado.</p>
-      ) : (
-        <ul className="history-list">
-          {histories.map((history) => (
-            <li key={history.id}>
-              <button
-                className="history-item"
-                onClick={() => loadPlayers(history)}
-                disabled={loadingPlayers}
-              >
-                <span className="clan-name">{history.clanName}</span>
-                <span className="meta">
-                  {history.season} &bull; {new Date(history.generatedAt).toLocaleString()} &bull; {history.players.length} jogadores
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
+          {result && (
+            <div className="message success">
+              <strong>{result.message}</strong>
+              <br />
+              <small>{result.filePath}</small>
+            </div>
+          )}
+        </div>
       )}
 
-      {selectedHistory && (
-        <div className="players-section">
-          <h3>
-            Jogadores - {selectedHistory.clanName} ({selectedHistory.season})
-          </h3>
-          {loadingPlayers ? (
-            <p>Carregando jogadores...</p>
-          ) : selectedPlayers.length === 0 ? (
-            <p className="empty">Nenhum jogador encontrado.</p>
+      {activeTab === 'history' && (
+        <div className="tab-content">
+          {histories.length === 0 ? (
+            <p className="empty">Nenhum histórico encontrado.</p>
           ) : (
-            <table className="players-table">
-              <thead>
-                <tr>
-                  <th>Jogador</th>
-                  <th>Tag</th>
-                  <th>Estrelas Ataque</th>
-                  <th>Estrelas Defesa</th>
-                  <th>Total</th>
-                  <th>Dias</th>
-                </tr>
-              </thead>
-              <tbody>
-                {selectedPlayers.map((player) => (
-                  <tr key={player.id}>
-                    <td>{player.playerName}</td>
-                    <td>{player.playerTag}</td>
-                    <td>{player.totalAttackStars}</td>
-                    <td>{player.totalDefenseStars}</td>
-                    <td>{player.totalStars}</td>
-                    <td>
-                      {player.days
-                        .map((d) => `${d.attackStars}/${d.defenseStars}`)
-                        .join(', ')}
-                    </td>
-                  </tr>
+            <div className="history-layout">
+              <div className="clan-list">
+                {clanGroups.map((clan) => (
+                  <div key={clan.tag} className="clan-group">
+                    <button
+                      className="clan-button"
+                      onClick={() =>
+                        setExpandedClan(expandedClan === clan.tag ? null : clan.tag)
+                      }
+                    >
+                      <span className="clan-name">{clan.name}</span>
+                      <span className="meta">{clan.tag} &bull; {clan.histories.length} registro(s)</span>
+                    </button>
+
+                    {expandedClan === clan.tag && (
+                      <ul className="history-list">
+                        {clan.histories.map((history) => (
+                          <li key={history.id}>
+                            <button
+                              className={`history-item ${selectedHistory?.id === history.id ? 'selected' : ''}`}
+                              onClick={() => loadPlayers(history)}
+                            >
+                              <span>{history.season}</span>
+                              <span className="meta">
+                                {new Date(history.generatedAt).toLocaleString()}
+                              </span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+
+              {selectedHistory && (
+                <div className="players-section">
+                  <h3>
+                    {selectedHistory.clanName} &bull; {selectedHistory.season}
+                  </h3>
+                  {loadingPlayers ? (
+                    <p>Carregando jogadores...</p>
+                  ) : selectedPlayers.length === 0 ? (
+                    <p className="empty">Nenhum jogador encontrado.</p>
+                  ) : (
+                    <table className="players-table">
+                      <thead>
+                        <tr>
+                          <th>Jogador</th>
+                          <th>Tag</th>
+                          <th>Ataque</th>
+                          <th>Defesa</th>
+                          <th>Total</th>
+                          <th>Dias</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {selectedPlayers.map((player) => (
+                          <tr key={player.id}>
+                            <td>{player.playerName}</td>
+                            <td>{player.playerTag}</td>
+                            <td>{player.totalAttackStars}</td>
+                            <td>{player.totalDefenseStars}</td>
+                            <td>{player.totalStars}</td>
+                            <td>
+                              {player.days
+                                .map((d) => `${d.attackStars}/${d.defenseStars}`)
+                                .join(', ')}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              )}
+            </div>
           )}
         </div>
       )}

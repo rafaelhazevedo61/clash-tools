@@ -14,6 +14,8 @@ O formato é baseado no conceito de [Keep a Changelog](https://keepachangelog.co
 - Tela de filtros por tag do clã e season.
 - Listagem de ligas salvas com data de geração e quantidade de jogadores.
 - Tabela de jogadores com totais de ataque, defesa, estrelas gerais e dias de guerra.
+- Navegação por abas (Gerar Excel / Histórico).
+- Histórico agrupado por clã com expansão para visualizar registros de cada season.
 
 ## [1.2.0] - 2026-08-12
 
