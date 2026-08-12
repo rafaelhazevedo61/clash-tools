@@ -6,6 +6,15 @@ O formato é baseado no conceito de [Keep a Changelog](https://keepachangelog.co
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-08-12
+
+### Added
+
+- Frontend evoluído para exibir histórico de ligas e jogadores.
+- Tela de filtros por tag do clã e season.
+- Listagem de ligas salvas com data de geração e quantidade de jogadores.
+- Tabela de jogadores com totais de ataque, defesa, estrelas gerais e dias de guerra.
+
 ## [1.2.0] - 2026-08-12
 
 ### Added
