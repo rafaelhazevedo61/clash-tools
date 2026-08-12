@@ -22,6 +22,7 @@ import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.format.TextStyle;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 @Service
@@ -46,8 +47,17 @@ public class ClanWarLeagueExportService {
         Path filePath = outputDir.resolve(fileName);
 
         try (Workbook workbook = new XSSFWorkbook()) {
-            for (Clan clan : clashProperties.getClans()) {
-                processClan(clan, workbook);
+            List<CompletableFuture<ClanExportData>> futures = clashProperties.getClans().stream()
+                    .map(clan -> CompletableFuture.supplyAsync(() -> processClan(clan)))
+                    .toList();
+
+            List<ClanExportData> results = futures.stream()
+                    .map(CompletableFuture::join)
+                    .filter(Objects::nonNull)
+                    .toList();
+
+            for (ClanExportData data : results) {
+                excelGenerator.generatePlayerDataExcel(data.playerData, workbook, data.clanName);
             }
 
             if (workbook.getNumberOfSheets() == 0) {
@@ -65,26 +75,27 @@ public class ClanWarLeagueExportService {
         return filePath.toFile();
     }
 
-    private void processClan(Clan clan, Workbook workbook) throws IOException, InterruptedException {
+    private ClanExportData processClan(Clan clan) {
         log.info("Processando clã: {} | Tag: {}", clan.getNome(), clan.getTag());
 
         try {
             List<ClanWarLeagueWarRegistry> registros = fetchWarRegistries(clan.getTag());
             if (registros.isEmpty()) {
                 log.warn("CLASH-TOOLS-LOG:::::: NENHUMA GUERRA ENCONTRADA PARA CLÃ: {} | Tag: {}", clan.getNome(), clan.getTag());
-                return;
+                return null;
             }
 
             List<ClanWarLeagueWarClan> clans = extractClans(clan.getNome(), registros);
             List<List<ClanWarLeagueWarMembers>> membersByDay = extractMembers(clans);
             Set<String> uniqueTags = collectUniqueTags(membersByDay);
 
-            log.info("Total de membros únicos na liga: {}", uniqueTags.size());
+            log.info("Total de membros únicos na liga: {} | Tag: {}", uniqueTags.size(), clan.getTag());
 
             List<PlayerData> playerDataList = buildPlayerData(uniqueTags, membersByDay);
-            excelGenerator.generatePlayerDataExcel(playerDataList, workbook, clan.getNome());
+            return new ClanExportData(clan.getNome(), playerDataList);
         } catch (Exception e) {
             log.error("CLASH-TOOLS-LOG:::::: ERRO AO PROCESSAR CLÃ: {} | Tag: {}", clan.getNome(), clan.getTag(), e);
+            return null;
         }
     }
 
@@ -206,5 +217,8 @@ public class ClanWarLeagueExportService {
                 .thenComparing(Comparator.comparingDouble(PlayerData::getTotalDefenseStars).reversed()));
 
         return playerDataList;
+    }
+
+    private record ClanExportData(String clanName, List<PlayerData> playerData) {
     }
 }
