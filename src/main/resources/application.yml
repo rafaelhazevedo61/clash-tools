@@ -1,0 +1,23 @@
+clash:
+  api:
+    base-url: https://api.clashofclans.com/v1
+    bearer-token: ${CLASH_API_TOKEN:}
+  league-group-endpoint: ${clash.api.base-url}/clans/{tag}/currentwar/leaguegroup
+  war-endpoint: ${clash.api.base-url}/clanwarleagues/wars/{tag}
+  output:
+    directory: ${CLASH_OUTPUT_DIR:./output}
+    filename-prefix: LigaMensal
+  weights:
+    attack-stars: ${CLASH_ATTACK_STARS_WEIGHT:1.0}
+    defense-stars: ${CLASH_DEFENSE_STARS_WEIGHT:1.0}
+  clans:
+    # Example:
+    # - nome: NATIVIDADE_BR
+    #   tag: "%232YJRLYYCC"
+    # - nome: INFINITOS
+    #   tag: "%2320P292C8Y"
+    list: []
+
+spring:
+  application:
+    name: clash-cwl-exporter

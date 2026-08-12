@@ -1,0 +1,204 @@
+package br.com.clash.cwlexporter.service;
+
+import br.com.clash.cwlexporter.config.ClashProperties;
+import br.com.clash.cwlexporter.model.*;
+import br.com.clash.cwlexporter.utils.ExcelGenerator;
+import br.com.clash.cwlexporter.utils.HttpUtil;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.stereotype.Service;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.LocalDate;
+import java.time.format.TextStyle;
+import java.util.*;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class ClanWarLeagueExportService {
+
+    private final ClashProperties clashProperties;
+    private final HttpClient httpClient;
+    private final ObjectMapper objectMapper;
+    private final ExcelGenerator excelGenerator;
+
+    public File exportLeagueFile() throws IOException, InterruptedException {
+        log.info("Iniciando exportação do arquivo da liga de guerras...");
+
+        LocalDate hoje = LocalDate.now();
+        String nomeMes = hoje.getMonth().getDisplayName(TextStyle.FULL, new Locale("pt", "BR"));
+        String ano = String.valueOf(hoje.getYear());
+
+        Path outputDir = Paths.get(clashProperties.getOutput().getDirectory());
+        Files.createDirectories(outputDir);
+        String fileName = String.format("%s_%s%s.xlsx", clashProperties.getOutput().getFilenamePrefix(), ano, nomeMes);
+        Path filePath = outputDir.resolve(fileName);
+
+        try (Workbook workbook = new XSSFWorkbook()) {
+            for (Clan clan : clashProperties.getClans()) {
+                processClan(clan, workbook);
+            }
+
+            if (workbook.getNumberOfSheets() == 0) {
+                var sheet = workbook.createSheet("Sem dados");
+                var row = sheet.createRow(0);
+                row.createCell(0).setCellValue("Nenhuma informação de liga foi gerada. Verifique os logs da API.");
+            }
+
+            try (var fileOut = Files.newOutputStream(filePath)) {
+                workbook.write(fileOut);
+            }
+        }
+
+        log.info("Excel mensal gerado com sucesso em: {}", filePath);
+        return filePath.toFile();
+    }
+
+    private void processClan(Clan clan, Workbook workbook) throws IOException, InterruptedException {
+        log.info("Processando clã: {} | Tag: {}", clan.getNome(), clan.getTag());
+
+        try {
+            List<ClanWarLeagueWarRegistry> registros = fetchWarRegistries(clan.getTag());
+            List<ClanWarLeagueWarClan> clans = extractClans(clan.getNome(), registros);
+            List<List<ClanWarLeagueWarMembers>> membersByDay = extractMembers(clans);
+            Set<String> uniqueTags = collectUniqueTags(membersByDay);
+
+            log.info("Total de membros únicos na liga: {}", uniqueTags.size());
+
+            List<PlayerData> playerDataList = buildPlayerData(uniqueTags, membersByDay);
+            excelGenerator.generatePlayerDataExcel(playerDataList, workbook, clan.getNome());
+        } catch (Exception e) {
+            log.error("Não foi possível gerar guerras para o clã: {} | Tag: {}", clan.getNome(), clan.getTag(), e);
+        }
+    }
+
+    private List<ClanWarLeagueWarRegistry> fetchWarRegistries(String tag) throws IOException, InterruptedException {
+        List<ClanWarLeagueWarRegistry> warRegistries = new ArrayList<>();
+        for (int day = 1; day <= 7; day++) {
+            ClanWarLeagueWarRegistry registry = fetchWarRegistryForDay(tag, day);
+            if (registry != null) {
+                warRegistries.add(registry);
+            }
+        }
+        if (warRegistries.isEmpty()) {
+            throw new RuntimeException("Nenhum registro de guerra encontrado para o clã.");
+        }
+        return warRegistries;
+    }
+
+    private ClanWarLeagueWarRegistry fetchWarRegistryForDay(String tag, int day) throws IOException, InterruptedException {
+        ClanWarLeagueGroup group = fetchLeagueGroup(tag);
+        if (group == null || group.rounds() == null || group.rounds().size() < day) {
+            return null;
+        }
+
+        List<String> warTags = group.rounds().get(day - 1).warTags();
+        for (String warTag : warTags) {
+            String url = buildUrl(clashProperties.getWarEndpoint(), warTag);
+            HttpRequest request = HttpUtil.createRequest(url, clashProperties.getApi().getBearerToken());
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() == 200) {
+                String body = response.body();
+                for (Clan clan : clashProperties.getClans()) {
+                    if (body.contains(clan.getNome())) {
+                        return objectMapper.readValue(body, ClanWarLeagueWarRegistry.class);
+                    }
+                }
+            } else {
+                log.warn("Erro ao buscar guerra {} para {}: {} - {}", day, tag, response.statusCode(), response.body());
+            }
+        }
+        return null;
+    }
+
+    private ClanWarLeagueGroup fetchLeagueGroup(String tag) throws IOException, InterruptedException {
+        String url = buildUrl(clashProperties.getLeagueGroupEndpoint(), tag);
+        HttpRequest request = HttpUtil.createRequest(url, clashProperties.getApi().getBearerToken());
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+        if (response.statusCode() == 200) {
+            return objectMapper.readValue(response.body(), ClanWarLeagueGroup.class);
+        }
+        if (response.statusCode() == 404) {
+            throw new RuntimeException("Não foi encontrado uma liga de guerras para o clã informado.");
+        }
+        log.warn("Erro ao buscar liga para {}: {}", tag, response.statusCode());
+        return null;
+    }
+
+    private String buildUrl(String template, String tag) {
+        return template.replace("{tag}", tag.replace("#", "%23"));
+    }
+
+    private List<ClanWarLeagueWarClan> extractClans(String clanName, List<ClanWarLeagueWarRegistry> registries) {
+        return registries.stream()
+                .map(r -> r.clan().name().equals(clanName) ? r.clan() : r.opponent())
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    private List<List<ClanWarLeagueWarMembers>> extractMembers(List<ClanWarLeagueWarClan> clans) {
+        return clans.stream()
+                .map(ClanWarLeagueWarClan::members)
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    private Set<String> collectUniqueTags(List<List<ClanWarLeagueWarMembers>> membersByDay) {
+        Set<String> uniqueTags = new HashSet<>();
+        for (List<ClanWarLeagueWarMembers> dayMembers : membersByDay) {
+            for (ClanWarLeagueWarMembers member : dayMembers) {
+                uniqueTags.add(member.tag());
+            }
+        }
+        return uniqueTags;
+    }
+
+    List<PlayerData> buildPlayerData(Set<String> uniqueTags, List<List<ClanWarLeagueWarMembers>> membersByDay) {
+        List<PlayerData> playerDataList = new ArrayList<>();
+        double attackWeight = clashProperties.getWeights().getAttackStars();
+        double defenseWeight = clashProperties.getWeights().getDefenseStars();
+
+        for (String tag : uniqueTags) {
+            Map<Integer, DayData> warData = new HashMap<>();
+            String name = null;
+
+            for (int day = 0; day < membersByDay.size(); day++) {
+                for (ClanWarLeagueWarMembers member : membersByDay.get(day)) {
+                    if (member.tag().equals(tag)) {
+                        name = member.name();
+                        int attackStars = member.attacks() != null && !member.attacks().isEmpty()
+                                ? (int) (member.attacks().get(0).stars() * attackWeight)
+                                : 0;
+                        double defenseStars = member.bestOpponentAttack() != null
+                                ? ((3 - member.bestOpponentAttack().stars()) * defenseWeight)
+                                : defenseWeight;
+                        warData.put(day + 1, new DayData(attackStars, defenseStars));
+                    }
+                }
+            }
+
+            if (name != null) {
+                playerDataList.add(new PlayerData(tag, name, warData));
+            }
+        }
+
+        playerDataList.sort(Comparator.comparingDouble(PlayerData::getTotalStars).reversed()
+                .thenComparing(Comparator.comparingInt(PlayerData::getTotalAttackStars).reversed())
+                .thenComparing(Comparator.comparingDouble(PlayerData::getTotalDefenseStars).reversed()));
+
+        return playerDataList;
+    }
+}
