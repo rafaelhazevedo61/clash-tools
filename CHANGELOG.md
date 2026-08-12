@@ -14,7 +14,7 @@ O formato é baseado no conceito de [Keep a Changelog](https://keepachangelog.co
 
 - Removido o último `RuntimeException` do fluxo de exportação. Quando um clã não possui registros de guerra, a aplicação apenas registra um log informativo e continua processando os demais clãs.
 
-## [0.0.1] - 2026-08-12
+## [1.0.0] - 2026-08-12
 
 ### Added
 
