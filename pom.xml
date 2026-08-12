@@ -13,10 +13,10 @@
     </parent>
 
     <groupId>br.com.clash</groupId>
-    <artifactId>clash-cwl-exporter</artifactId>
+    <artifactId>clash-tools</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>clash-cwl-exporter</name>
-    <description>Clash of Clans Clan War League exporter</description>
+    <name>clash-tools</name>
+    <description>Ferramentas utilitárias para Clash of Clans: exportação de liga de guerras, geração de relatórios e automações para gestão de clãs.</description>
 
     <properties>
         <java.version>17</java.version>
