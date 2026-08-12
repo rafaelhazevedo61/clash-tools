@@ -12,6 +12,7 @@ public class PlayerDayDataEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "war_day")
     private Integer day;
 
     private Integer attackStars;
