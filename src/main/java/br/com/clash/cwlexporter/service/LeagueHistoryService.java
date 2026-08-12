@@ -23,6 +23,7 @@ public class LeagueHistoryService {
 
     @Transactional
     public LeagueHistoryEntity save(String clanTag, String clanName, String season, String filePath, List<PlayerData> players) {
+        clanTag = normalizeTag(clanTag);
         LeagueHistoryEntity league = new LeagueHistoryEntity();
         league.setClanTag(clanTag);
         league.setClanName(clanName);
@@ -76,6 +77,7 @@ public class LeagueHistoryService {
 
     @Transactional(readOnly = true)
     public List<LeagueHistoryEntity> findByClan(String clanTag, String season) {
+        clanTag = normalizeTag(clanTag);
         if (season != null && !season.isBlank()) {
             return leagueHistoryRepository.findByClanTagAndSeasonOrderByGeneratedAtDesc(clanTag, season);
         }
@@ -85,5 +87,12 @@ public class LeagueHistoryService {
     @Transactional(readOnly = true)
     public List<PlayerHistoryEntity> findPlayersByLeague(Long leagueId) {
         return playerHistoryRepository.findByLeagueIdOrderByTotalStarsDesc(leagueId);
+    }
+
+    private String normalizeTag(String tag) {
+        if (tag == null) {
+            return null;
+        }
+        return tag.replace("%23", "#").trim();
     }
 }
