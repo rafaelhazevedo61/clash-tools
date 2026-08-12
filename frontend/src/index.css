@@ -88,6 +88,20 @@ button:disabled {
   cursor: not-allowed;
 }
 
+button.danger {
+  background-color: #c62828;
+}
+
+button.danger:hover:not(:disabled) {
+  background-color: #a31818;
+}
+
+.history-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+}
+
 button.history-item,
 button.clan-button {
   background-color: #f8f9fa;

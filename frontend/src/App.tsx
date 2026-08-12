@@ -33,6 +33,11 @@ interface ExportResponse {
   filePath: string
 }
 
+interface ClearResponse {
+  message: string
+  deleted: number
+}
+
 interface ClanGroup {
   tag: string
   name: string
@@ -43,6 +48,7 @@ function App() {
   const [activeTab, setActiveTab] = useState<Tab>('export')
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<ExportResponse | null>(null)
+  const [clearResult, setClearResult] = useState<ClearResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const [histories, setHistories] = useState<LeagueHistory[]>([])
@@ -83,6 +89,30 @@ function App() {
     }
   }
 
+  const handleClear = async () => {
+    if (!confirm('Deseja realmente limpar todo o histórico?')) {
+      return
+    }
+    setLoading(true)
+    setClearResult(null)
+    setError(null)
+    try {
+      const response = await fetch('/api/league/history', { method: 'DELETE' })
+      if (!response.ok) {
+        throw new Error(`Erro ${response.status}: ${response.statusText}`)
+      }
+      const data: ClearResponse = await response.json()
+      setClearResult(data)
+      setHistories([])
+      setSelectedHistory(null)
+      setSelectedPlayers([])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao limpar histórico')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const loadPlayers = async (history: LeagueHistory) => {
     setSelectedHistory(history)
     setSelectedPlayers([])
@@ -113,7 +143,11 @@ function App() {
       existing.histories.push(history)
       return groups
     }
-    groups.push({ tag: history.clanTag, name: history.clanName, histories: [history] })
+    groups.push({
+      tag: history.clanTag,
+      name: history.clanName || history.clanTag,
+      histories: [history],
+    })
     return groups
   }, [] as ClanGroup[])
 
@@ -136,6 +170,11 @@ function App() {
       </div>
 
       {error && <div className="message error">{error}</div>}
+      {clearResult && (
+        <div className="message success">
+          {clearResult.message} ({clearResult.deleted} registro(s) removido(s))
+        </div>
+      )}
 
       {activeTab === 'export' && (
         <div className="tab-content">
@@ -156,6 +195,12 @@ function App() {
 
       {activeTab === 'history' && (
         <div className="tab-content">
+          <div className="history-header">
+            <button className="danger" onClick={handleClear} disabled={loading}>
+              Limpar histórico
+            </button>
+          </div>
+
           {histories.length === 0 ? (
             <p className="empty">Nenhum histórico encontrado.</p>
           ) : (
@@ -170,7 +215,9 @@ function App() {
                       }
                     >
                       <span className="clan-name">{clan.name}</span>
-                      <span className="meta">{clan.tag} &bull; {clan.histories.length} registro(s)</span>
+                      <span className="meta">
+                        {clan.tag} &bull; {clan.histories.length} registro(s)
+                      </span>
                     </button>
 
                     {expandedClan === clan.tag && (
@@ -181,7 +228,7 @@ function App() {
                               className={`history-item ${selectedHistory?.id === history.id ? 'selected' : ''}`}
                               onClick={() => loadPlayers(history)}
                             >
-                              <span>{history.season}</span>
+                              <span>{history.season || 'Sem season'}</span>
                               <span className="meta">
                                 {new Date(history.generatedAt).toLocaleString()}
                               </span>
@@ -197,7 +244,7 @@ function App() {
               {selectedHistory && (
                 <div className="players-section">
                   <h3>
-                    {selectedHistory.clanName} &bull; {selectedHistory.season}
+                    {selectedHistory.clanName || selectedHistory.clanTag} &bull; {selectedHistory.season || 'Sem season'}
                   </h3>
                   {loadingPlayers ? (
                     <p>Carregando jogadores...</p>
@@ -218,8 +265,8 @@ function App() {
                       <tbody>
                         {selectedPlayers.map((player) => (
                           <tr key={player.id}>
-                            <td>{player.playerName}</td>
-                            <td>{player.playerTag}</td>
+                            <td>{player.playerName || '-'}</td>
+                            <td>{player.playerTag || '-'}</td>
                             <td>{player.totalAttackStars}</td>
                             <td>{player.totalDefenseStars}</td>
                             <td>{player.totalStars}</td>

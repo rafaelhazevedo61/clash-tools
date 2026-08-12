@@ -89,6 +89,13 @@ public class LeagueHistoryService {
         return playerHistoryRepository.findByLeagueIdOrderByTotalStarsDesc(leagueId);
     }
 
+    @Transactional
+    public long clearAll() {
+        long count = leagueHistoryRepository.count();
+        leagueHistoryRepository.deleteAllHistories();
+        return count;
+    }
+
     private String normalizeTag(String tag) {
         if (tag == null) {
             return null;
