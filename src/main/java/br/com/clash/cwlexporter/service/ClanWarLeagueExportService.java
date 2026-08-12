@@ -33,6 +33,7 @@ public class ClanWarLeagueExportService {
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
     private final ExcelGenerator excelGenerator;
+    private final LeagueHistoryService leagueHistoryService;
 
     public File exportLeagueFile() throws IOException, InterruptedException {
         log.info("Iniciando exportação do arquivo da liga de guerras...");
@@ -58,6 +59,7 @@ public class ClanWarLeagueExportService {
 
             for (ClanExportData data : results) {
                 excelGenerator.generatePlayerDataExcel(data.playerData, workbook, data.clanName);
+                leagueHistoryService.save(data.clanTag, data.clanName, data.season, filePath.toString(), data.playerData);
             }
 
             if (workbook.getNumberOfSheets() == 0) {
@@ -92,7 +94,10 @@ public class ClanWarLeagueExportService {
             log.info("Total de membros únicos na liga: {} | Tag: {}", uniqueTags.size(), clan.getTag());
 
             List<PlayerData> playerDataList = buildPlayerData(uniqueTags, membersByDay);
-            return new ClanExportData(clan.getNome(), playerDataList);
+            String season = registros.get(0).endTime() != null && registros.get(0).endTime().length() >= 7
+                    ? registros.get(0).endTime().substring(0, 7)
+                    : null;
+            return new ClanExportData(clan.getTag(), clan.getNome(), season, playerDataList);
         } catch (Exception e) {
             log.error("CLASH-TOOLS-LOG:::::: ERRO AO PROCESSAR CLÃ: {} | Tag: {}", clan.getNome(), clan.getTag(), e);
             return null;
@@ -219,6 +224,6 @@ public class ClanWarLeagueExportService {
         return playerDataList;
     }
 
-    private record ClanExportData(String clanName, List<PlayerData> playerData) {
+    private record ClanExportData(String clanTag, String clanName, String season, List<PlayerData> playerData) {
     }
 }

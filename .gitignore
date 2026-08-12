@@ -42,3 +42,4 @@ application-local.properties
 .env
 output/
 app.log
+data/

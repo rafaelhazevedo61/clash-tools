@@ -23,6 +23,8 @@ class ClanWarLeagueExportServiceTest {
     HttpClient httpClient;
     @Mock
     ObjectMapper objectMapper;
+    @Mock
+    LeagueHistoryService leagueHistoryService;
 
     @Test
     void buildPlayerData_calculatesStarsCorrectly() {
@@ -32,7 +34,7 @@ class ClanWarLeagueExportServiceTest {
         properties.getWeights().setDefenseStars(0.5);
         properties.setOutput(new ClashProperties.Output());
 
-        ClanWarLeagueExportService service = new ClanWarLeagueExportService(properties, httpClient, objectMapper, new ExcelGenerator());
+        ClanWarLeagueExportService service = new ClanWarLeagueExportService(properties, httpClient, objectMapper, new ExcelGenerator(), leagueHistoryService);
 
         List<ClanWarLeagueWarMembers> day1 = List.of(
                 new ClanWarLeagueWarMembers("#tag1", "Player1", 12, 1,
