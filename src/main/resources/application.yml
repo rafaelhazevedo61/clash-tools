@@ -4,6 +4,10 @@ spring:
   config:
     import: optional:classpath:clans.yml
 
+logging:
+  charset:
+    console: UTF-8
+
 clash:
   api:
     base-url: https://api.clashofclans.com/v1

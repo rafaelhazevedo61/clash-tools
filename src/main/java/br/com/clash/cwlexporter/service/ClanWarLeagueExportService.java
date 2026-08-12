@@ -70,6 +70,11 @@ public class ClanWarLeagueExportService {
 
         try {
             List<ClanWarLeagueWarRegistry> registros = fetchWarRegistries(clan.getTag());
+            if (registros.isEmpty()) {
+                log.warn("CLASH-TOOLS-LOG:::::: NENHUMA GUERRA ENCONTRADA PARA CLÃ: {} | Tag: {}", clan.getNome(), clan.getTag());
+                return;
+            }
+
             List<ClanWarLeagueWarClan> clans = extractClans(clan.getNome(), registros);
             List<List<ClanWarLeagueWarMembers>> membersByDay = extractMembers(clans);
             Set<String> uniqueTags = collectUniqueTags(membersByDay);
@@ -79,7 +84,7 @@ public class ClanWarLeagueExportService {
             List<PlayerData> playerDataList = buildPlayerData(uniqueTags, membersByDay);
             excelGenerator.generatePlayerDataExcel(playerDataList, workbook, clan.getNome());
         } catch (Exception e) {
-            log.error("Não foi possível gerar guerras para o clã: {} | Tag: {}", clan.getNome(), clan.getTag(), e);
+            log.error("CLASH-TOOLS-LOG:::::: ERRO AO PROCESSAR CLÃ: {} | Tag: {}", clan.getNome(), clan.getTag(), e);
         }
     }
 
@@ -92,7 +97,7 @@ public class ClanWarLeagueExportService {
             }
         }
         if (warRegistries.isEmpty()) {
-            throw new RuntimeException("Nenhum registro de guerra encontrado para o clã.");
+            log.warn("CLASH-TOOLS-LOG:::::: NENHUM REGISTRO DE GUERRA ENCONTRADO (tag: {})", tag);
         }
         return warRegistries;
     }
