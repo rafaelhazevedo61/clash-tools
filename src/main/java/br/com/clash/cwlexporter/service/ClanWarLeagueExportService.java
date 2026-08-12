@@ -96,7 +96,8 @@ public class ClanWarLeagueExportService {
 
             List<PlayerData> playerDataList = buildPlayerData(uniqueTags, membersByDay);
             String season = parseSeason(registros.get(0).endTime());
-            return new ClanExportData(clan.getTag(), clan.getNome(), season, playerDataList);
+            String clanName = clan.getNome() != null && !clan.getNome().isBlank() ? clan.getNome() : clan.getTag();
+            return new ClanExportData(clan.getTag(), clanName, season, playerDataList);
         } catch (Exception e) {
             log.error("CLASH-TOOLS-LOG:::::: ERRO AO PROCESSAR CLÃ: {} | Tag: {}", clan.getNome(), clan.getTag(), e);
             return null;

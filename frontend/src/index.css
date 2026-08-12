@@ -18,7 +18,7 @@ body {
   padding: 2rem;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  max-width: 1000px;
+  max-width: 1100px;
   width: 100%;
   text-align: center;
 }
@@ -28,9 +28,9 @@ h1 {
   color: #1a1a2e;
 }
 
-h2, h3 {
+h2, h3, h4 {
   color: #1a1a2e;
-  margin-top: 1.5rem;
+  margin-top: 0;
 }
 
 .tabs {
@@ -96,35 +96,6 @@ button.danger:hover:not(:disabled) {
   background-color: #a31818;
 }
 
-.history-header {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 1rem;
-}
-
-button.history-item,
-button.clan-button {
-  background-color: #f8f9fa;
-  color: #213547;
-  text-align: left;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  border: 1px solid #e1e4e8;
-  padding: 0.75rem 1rem;
-}
-
-button.history-item:hover:not(:disabled),
-button.clan-button:hover:not(:disabled) {
-  background-color: #eef1f4;
-}
-
-button.history-item.selected {
-  background-color: #e3f2fd;
-  border-color: #4a90a4;
-}
-
 .message {
   margin-top: 1.5rem;
   padding: 1rem;
@@ -147,11 +118,21 @@ button.history-item.selected {
   margin-top: 1rem;
 }
 
+.history-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+}
+
 .history-layout {
   display: grid;
-  grid-template-columns: 320px 1fr;
+  grid-template-columns: 260px 1fr;
   gap: 1.5rem;
   align-items: start;
+  border: 1px solid #e1e4e8;
+  border-radius: 12px;
+  overflow: hidden;
+  min-height: 400px;
 }
 
 @media (max-width: 768px) {
@@ -161,33 +142,66 @@ button.history-item.selected {
 }
 
 .clan-list {
+  background-color: #f8f9fa;
+  padding: 1rem;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.5rem;
   max-height: 600px;
   overflow-y: auto;
-  padding-right: 0.5rem;
+  border-right: 1px solid #e1e4e8;
 }
 
-.clan-group {
-  border: 1px solid #e1e4e8;
-  border-radius: 8px;
-  overflow: hidden;
+@media (max-width: 768px) {
+  .clan-list {
+    border-right: none;
+    border-bottom: 1px solid #e1e4e8;
+  }
 }
 
 .clan-button {
-  border-radius: 0;
-  border: none;
+  background-color: white;
+  color: #1a1a2e;
+  border: 1px solid #e1e4e8;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  width: 100%;
+  min-height: 60px;
+  justify-content: center;
+}
+
+.clan-button:hover:not(:disabled) {
+  background-color: #eef1f4;
+}
+
+.clan-button.selected {
+  background-color: #1a1a2e;
+  color: white;
+  border-color: #1a1a2e;
+}
+
+.clan-button.selected .meta {
+  color: #ccc;
 }
 
 .clan-name {
   font-weight: 600;
-  color: #1a1a2e;
+  font-size: 1rem;
+  line-height: 1.2;
 }
 
 .meta {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: #666;
+}
+
+.history-detail {
+  padding: 1rem;
+  max-height: 600px;
+  overflow-y: auto;
 }
 
 .history-list {
@@ -196,30 +210,44 @@ button.history-item.selected {
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.5rem;
 }
 
 .history-list li {
   width: 100%;
 }
 
-.history-list .history-item {
-  border-radius: 0;
-  border: none;
-  border-top: 1px solid #e1e4e8;
+.history-item {
+  background-color: #f8f9fa;
+  color: #213547;
+  border: 1px solid #e1e4e8;
+  padding: 0.6rem 1rem;
+  text-align: left;
+  display: flex;
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
-  padding: 0.6rem 1rem;
+  width: 100%;
+  gap: 1rem;
+}
+
+.history-item:hover:not(:disabled) {
+  background-color: #eef1f4;
+}
+
+.history-item.selected {
+  background-color: #e3f2fd;
+  border-color: #4a90a4;
 }
 
 .players-section {
+  margin-top: 2rem;
   text-align: left;
   overflow-x: auto;
 }
 
-.players-section h3 {
-  margin-top: 0;
+.players-section h4 {
+  margin-bottom: 0.75rem;
 }
 
 .players-table {

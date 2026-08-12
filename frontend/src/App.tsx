@@ -52,7 +52,7 @@ function App() {
   const [error, setError] = useState<string | null>(null)
 
   const [histories, setHistories] = useState<LeagueHistory[]>([])
-  const [expandedClan, setExpandedClan] = useState<string | null>(null)
+  const [selectedClan, setSelectedClan] = useState<ClanGroup | null>(null)
   const [selectedHistory, setSelectedHistory] = useState<LeagueHistory | null>(null)
   const [selectedPlayers, setSelectedPlayers] = useState<Player[]>([])
   const [loadingPlayers, setLoadingPlayers] = useState(false)
@@ -104,6 +104,7 @@ function App() {
       const data: ClearResponse = await response.json()
       setClearResult(data)
       setHistories([])
+      setSelectedClan(null)
       setSelectedHistory(null)
       setSelectedPlayers([])
     } catch (err) {
@@ -145,11 +146,14 @@ function App() {
     }
     groups.push({
       tag: history.clanTag,
-      name: history.clanName || history.clanTag,
+      name: history.clanName?.trim() || history.clanTag,
       histories: [history],
     })
     return groups
   }, [] as ClanGroup[])
+
+  const displayName = (history: LeagueHistory) =>
+    history.clanName?.trim() || history.clanTag
 
   return (
     <div className="container">
@@ -206,23 +210,34 @@ function App() {
           ) : (
             <div className="history-layout">
               <div className="clan-list">
+                <h3>Clãs</h3>
                 {clanGroups.map((clan) => (
-                  <div key={clan.tag} className="clan-group">
-                    <button
-                      className="clan-button"
-                      onClick={() =>
-                        setExpandedClan(expandedClan === clan.tag ? null : clan.tag)
-                      }
-                    >
-                      <span className="clan-name">{clan.name}</span>
-                      <span className="meta">
-                        {clan.tag} &bull; {clan.histories.length} registro(s)
-                      </span>
-                    </button>
+                  <button
+                    key={clan.tag}
+                    className={`clan-button ${selectedClan?.tag === clan.tag ? 'selected' : ''}`}
+                    onClick={() => {
+                      setSelectedClan(clan)
+                      setSelectedHistory(null)
+                      setSelectedPlayers([])
+                    }}
+                  >
+                    <span className="clan-name">{clan.name}</span>
+                    <span className="meta">{clan.tag}</span>
+                  </button>
+                ))}
+              </div>
 
-                    {expandedClan === clan.tag && (
+              <div className="history-detail">
+                {!selectedClan ? (
+                  <p className="empty">Selecione um clã à esquerda para ver o histórico.</p>
+                ) : (
+                  <>
+                    <h3>{selectedClan.name}</h3>
+                    {selectedClan.histories.length === 0 ? (
+                      <p className="empty">Nenhum registro para este clã.</p>
+                    ) : (
                       <ul className="history-list">
-                        {clan.histories.map((history) => (
+                        {selectedClan.histories.map((history) => (
                           <li key={history.id}>
                             <button
                               className={`history-item ${selectedHistory?.id === history.id ? 'selected' : ''}`}
@@ -237,51 +252,51 @@ function App() {
                         ))}
                       </ul>
                     )}
-                  </div>
-                ))}
-              </div>
 
-              {selectedHistory && (
-                <div className="players-section">
-                  <h3>
-                    {selectedHistory.clanName || selectedHistory.clanTag} &bull; {selectedHistory.season || 'Sem season'}
-                  </h3>
-                  {loadingPlayers ? (
-                    <p>Carregando jogadores...</p>
-                  ) : selectedPlayers.length === 0 ? (
-                    <p className="empty">Nenhum jogador encontrado.</p>
-                  ) : (
-                    <table className="players-table">
-                      <thead>
-                        <tr>
-                          <th>Jogador</th>
-                          <th>Tag</th>
-                          <th>Ataque</th>
-                          <th>Defesa</th>
-                          <th>Total</th>
-                          <th>Dias</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {selectedPlayers.map((player) => (
-                          <tr key={player.id}>
-                            <td>{player.playerName || '-'}</td>
-                            <td>{player.playerTag || '-'}</td>
-                            <td>{player.totalAttackStars}</td>
-                            <td>{player.totalDefenseStars}</td>
-                            <td>{player.totalStars}</td>
-                            <td>
-                              {player.days
-                                .map((d) => `${d.attackStars}/${d.defenseStars}`)
-                                .join(', ')}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-                </div>
-              )}
+                    {selectedHistory && selectedHistory.clanTag === selectedClan.tag && (
+                      <div className="players-section">
+                        <h4>
+                          {displayName(selectedHistory)} &bull; {selectedHistory.season || 'Sem season'}
+                        </h4>
+                        {loadingPlayers ? (
+                          <p>Carregando jogadores...</p>
+                        ) : selectedPlayers.length === 0 ? (
+                          <p className="empty">Nenhum jogador encontrado.</p>
+                        ) : (
+                          <table className="players-table">
+                            <thead>
+                              <tr>
+                                <th>Jogador</th>
+                                <th>Tag</th>
+                                <th>Ataque</th>
+                                <th>Defesa</th>
+                                <th>Total</th>
+                                <th>Dias</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {selectedPlayers.map((player) => (
+                                <tr key={player.id}>
+                                  <td>{player.playerName || '-'}</td>
+                                  <td>{player.playerTag || '-'}</td>
+                                  <td>{player.totalAttackStars}</td>
+                                  <td>{player.totalDefenseStars}</td>
+                                  <td>{player.totalStars}</td>
+                                  <td>
+                                    {player.days
+                                      .map((d) => `${d.attackStars}/${d.defenseStars}`)
+                                      .join(', ')}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
           )}
         </div>
