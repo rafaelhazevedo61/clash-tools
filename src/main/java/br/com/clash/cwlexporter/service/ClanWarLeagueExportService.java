@@ -20,6 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -94,9 +95,7 @@ public class ClanWarLeagueExportService {
             log.info("Total de membros únicos na liga: {} | Tag: {}", uniqueTags.size(), clan.getTag());
 
             List<PlayerData> playerDataList = buildPlayerData(uniqueTags, membersByDay);
-            String season = registros.get(0).endTime() != null && registros.get(0).endTime().length() >= 7
-                    ? registros.get(0).endTime().substring(0, 7)
-                    : null;
+            String season = parseSeason(registros.get(0).endTime());
             return new ClanExportData(clan.getTag(), clan.getNome(), season, playerDataList);
         } catch (Exception e) {
             log.error("CLASH-TOOLS-LOG:::::: ERRO AO PROCESSAR CLÃ: {} | Tag: {}", clan.getNome(), clan.getTag(), e);
@@ -225,5 +224,19 @@ public class ClanWarLeagueExportService {
     }
 
     private record ClanExportData(String clanTag, String clanName, String season, List<PlayerData> playerData) {
+    }
+
+    private String parseSeason(String endTime) {
+        if (endTime == null || endTime.length() < 8) {
+            return null;
+        }
+        try {
+            String datePart = endTime.substring(0, 8);
+            LocalDate date = LocalDate.parse(datePart, DateTimeFormatter.BASIC_ISO_DATE);
+            return date.format(DateTimeFormatter.ofPattern("yyyy-MM"));
+        } catch (Exception e) {
+            log.warn("Não foi possível parsear season de endTime: {}", endTime);
+            return null;
+        }
     }
 }
