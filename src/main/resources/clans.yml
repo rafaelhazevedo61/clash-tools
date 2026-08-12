@@ -1,6 +1,4 @@
 clash:
-  api:
-    bearer-token: ${CLASH_API_TOKEN:}
   clans:
     - nome: NATIVIDADE_BR
       tag: "%232YJRLYYCC"

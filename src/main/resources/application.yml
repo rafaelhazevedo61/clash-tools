@@ -7,6 +7,8 @@ spring:
 clash:
   api:
     base-url: https://api.clashofclans.com/v1
+    bearer-token: ${CLASH_API_TOKEN:}
+    token-file: ${CLASH_TOKEN_FILE:}
   league-group-endpoint: ${clash.api.base-url}/clans/{tag}/currentwar/leaguegroup
   war-endpoint: ${clash.api.base-url}/clanwarleagues/wars/{tag}
   output:

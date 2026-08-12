@@ -1,0 +1,8 @@
+# Copy this file to application-local.yml and fill in your token.
+# Do NOT commit application-local.yml — it is ignored by Git.
+
+clash:
+  api:
+    bearer-token: YOUR_CLASH_API_TOKEN_HERE
+    # or load from a file outside the project:
+    # token-file: /home/your-user/.clash-tools/token
