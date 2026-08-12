@@ -32,6 +32,8 @@ target/
 ### Frontend ###
 frontend/node_modules/
 frontend/dist/
+frontend/*.log
+frontend/*.tsbuildinfo
 
 ### Local configuration ###
 application-local.yml
