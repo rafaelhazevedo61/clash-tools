@@ -6,6 +6,20 @@ O formato é baseado no conceito de [Keep a Changelog](https://keepachangelog.co
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-08-12
+
+### Added
+
+- Persistência dos dados da liga de guerras em banco H2.
+- Entidades `LeagueHistoryEntity`, `PlayerHistoryEntity` e `PlayerDayDataEntity` com repositórios Spring Data JPA.
+- `LeagueHistoryService` para salvar e consultar histórico de ligas e jogadores.
+- Endpoints de histórico:
+  - `GET /api/league/history` — lista todas as ligas salvas.
+  - `GET /api/league/history/clan?tag={tag}&season={season}` — filtra por clã e season.
+  - `GET /api/league/history/{id}/players` — lista jogadores de uma liga salva.
+- Fluxo de exportação agora salva automaticamente os dados processados no banco ao gerar o Excel.
+- Console H2 habilitado em `/h2-console` para consultas diretas durante o desenvolvimento.
+
 ## [1.1.0] - 2026-08-12
 
 ### Added
