@@ -1,0 +1,11 @@
+clash:
+  api:
+    bearer-token: ${CLASH_API_TOKEN:}
+  clans:
+    - nome: NATIVIDADE_BR
+      tag: "%232YJRLYYCC"
+    - nome: INFINITOS
+      tag: "%2320P292C8Y"
+  weights:
+    attack-stars: 1.0
+    defense-stars: 1.0
